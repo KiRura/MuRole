@@ -244,7 +244,7 @@ try {
       const command = interaction.command.name;
       const option = interaction.options;
       const inguild_commands = ["role"];
-      if (inguild_commands.find(targetcommand => targetcommand === command)) {
+      if (inguild_commands === command) {
         if (!(await isGuild(interaction))) return;
       };
       const kirura = await client.users.fetch("606093171151208448");
