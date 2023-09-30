@@ -1,93 +1,97 @@
-try {
-  require("dotenv").config();
-  const { Client, GatewayIntentBits, PermissionFlagsBits, ApplicationCommandOptionType } = require("discord.js");
-  const client = new Client({ intents: Object.values(GatewayIntentBits) });
-  const Ping = require("ping");
-  const date = new Date();
-  console.log("loaded modules");
+import { Client, GatewayIntentBits, PermissionFlagsBits, ApplicationCommandOptionType } from "discord.js"
+import Ping from "ping"
+import { Logger } from "tslog"
+import { config } from "dotenv"
+const logger = new Logger({ hideLogPositionForProduction: true })
+logger.info('loaded modules')
+config()
 
-  const mutaocolor = 16760703;
-  const redcolor = 16744319;
-  const greencolor = 9043849;
+const client = new Client({ intents: Object.values(GatewayIntentBits) });
+const date = new Date();
 
-  const not_has_manage_role = "ロール管理の権限がありません。";
-  const cannot_manage_role = "このロールは管理できません。";
+const mutaocolor = 16760703;
+const redcolor = 16744319;
+const greencolor = 9043849;
 
-  function now() {
-    const weeks = ["日", "月", "火", "水", "木", "金", "土"];
-    const dayOfWeek = weeks[dt.getDay()];
-    return `${date.getFullYear} / ${date.getMonth() + 1} / ${date.getDate()} (${dayOfWeek}) ${date.getHours()} : ${date.getMinutes()} : ${date.getSeconds()} . ${date.getMilliseconds()}`;
+const not_has_manage_role = "ロール管理の権限がありません。";
+const cannot_manage_role = "このロールは管理できません。";
+
+function now() {
+  const weeks = ["日", "月", "火", "水", "木", "金", "土"];
+  const dayOfWeek = weeks[dt.getDay()];
+  return `${date.getFullYear} / ${date.getMonth() + 1} / ${date.getDate()} (${dayOfWeek}) ${date.getHours()} : ${date.getMinutes()} : ${date.getSeconds()} . ${date.getMilliseconds()}`;
+};
+
+async function isGuild(interaction) {
+  if (!interaction.inGuild()) {
+    await interaction.reply({ content: "サーバー内でのみ実行できます。", ephemeral: true });
+    return false;
   };
+  return true;
+};
 
-  async function isGuild(interaction) {
-    if (!interaction.inGuild()) {
-      await interaction.reply({ content: "サーバー内でのみ実行できます。", ephemeral: true });
+async function permissionHas(interaction, PermissionFlagsBits, String) {
+  if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits)) {
+    await interaction.reply({ content: String, ephemeral: true });
+    return false;
+  };
+  return true;
+};
+
+function avatar_to_URL(user) {
+  if (user.avatarURL()) {
+    return user.avatarURL({ size: 4096 });
+  } else {
+    return user.defaultAvatarURL
+  };
+};
+
+async function ping() {
+  return (await Ping.promise.probe("8.8.8.8")).time;
+};
+
+function roleHas(user, role) {
+  return user.roles.cache.has(role.id);
+};
+
+async function managerole(user, or, role, interaction) {
+  const has = user.roles.cache.has(role.id);
+  if (or === "add") {
+    if (has) {
+      await interaction.reply({ content: "既にロールが付いています。", ephemeral: true });
       return false;
     };
-    return true;
-  };
-
-  async function permissionHas(interaction, PermissionFlagsBits, String) {
-    if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits)) {
-      await interaction.reply({ content: String, ephemeral: true });
+    user.roles.add(role)
+      .then(() => {
+        return true
+      })
+      .catch(async error => {
+        await interaction.reply({ content: cannot_manage_role });
+        return false;
+      });
+  } else {
+    if (!has) {
+      await interaction.reply({ content: "既にロールが外されています。", ephemeral: true });
       return false;
     };
-    return true;
-  };
-
-  function avatar_to_URL(user) {
-    if (user.avatarURL()) {
-      return user.avatarURL({ size: 4096 });
-    } else {
-      return user.defaultAvatarURL
-    };
-  };
-
-  async function ping() {
-    return (await Ping.promise.probe("8.8.8.8")).time;
-  };
-
-  function roleHas(user, role) {
-    return user.roles.cache.has(role.id);
-  };
-
-  async function managerole(user, or, role, interaction) {
-    const has = user.roles.cache.has(role.id);
-    if (or === "add") {
-      if (has) {
-        await interaction.reply({ content: "既にロールが付いています。", ephemeral: true });
+    user.roles.remove(role)
+      .then(() => {
+        return true
+      })
+      .catch(async error => {
+        await interaction.reply({ content: cannot_manage_role });
         return false;
-      };
-      user.roles.add(role)
-        .then(() => {
-          return true
-        })
-        .catch(async error => {
-          await interaction.reply({ content: cannot_manage_role });
-          return false;
-        });
-    } else {
-      if (!has) {
-        await interaction.reply({ content: "既にロールが外されています。", ephemeral: true });
-        return false;
-      };
-      user.roles.remove(role)
-        .then(() => {
-          return true
-        })
-        .catch(async error => {
-          await interaction.reply({ content: cannot_manage_role });
-          return false;
-        });
-    }
+      });
   }
+}
 
+try {
   client.once("ready", async () => {
     setInterval(async () => {
       client.user.setActivity({ name: `${(await client.guilds.fetch()).size} servers・${client.users.cache.size} users・${await ping()} ms` });
     }, 10000);
 
-    console.log("setting commands...");
+    logger.info('setting slash commands...')
     await client.application.commands.set([
       { // ping
         name: "ping",
@@ -235,7 +239,7 @@ try {
       }
     ]);
 
-    console.log(`${client.user.tag} all ready`);
+    logger.info(`${client.user.tag} all ready`)
   });
 
   client.on("interactionCreate", async interaction => {
@@ -372,13 +376,13 @@ try {
         };
       };
     } catch (error) {
-      console.log(now());
-      console.error(error);
+      logger.error(now())
+      logger.error(error)
     };
   });
 
   client.login(process.env.DISCORD_BOT_TOKEN);
 } catch (error) {
-  console.log(now());
-  console.error(error);
+  logger.error(now())
+  logger.error(error)
 };

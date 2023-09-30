@@ -2,17 +2,18 @@
   "dependencies": {
     "discord.js": "^14.13.0",
     "dotenv": "^16.3.1",
-    "ping": "^0.4.4"
+    "ping": "^0.4.4",
+    "tslog": "^4.9.2"
   },
   "name": "role-manager",
   "version": "1.0.0",
   "main": "main.js",
-  "devDependencies": {},
   "scripts": {
     "test": "node main.js"
   },
   "keywords": [],
   "author": "KiRura",
   "license": "MIT",
-  "description": ""
+  "description": "",
+  "type": "module"
 }
